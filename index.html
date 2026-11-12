@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LaLiga · Predicciones y H2H</title>
+<style>
+:root{--bg:#0f1318;--card:#181e26;--line:#2a323d;--tx:#e8edf3;--mu:#8b97a6;--ok:#3ecf8e;--bad:#ef5b5b;--warn:#f0b429}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,sans-serif;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;max-width:1300px;margin:0 auto 14px}
+h1{font-size:20px;margin:0}button{background:#2b6cb0;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px}
+.st{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--mu)}.pill{padding:3px 9px;border-radius:99px;border:1px solid var(--line)}
+.ok{color:var(--ok)}.error{color:var(--bad)}.stale{color:var(--warn)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;max-width:1300px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:14px}
+.top{display:flex;gap:10px;align-items:center}.top img{width:44px;height:44px;object-fit:contain}
+.top h2{margin:0;font-size:17px}.mu{color:var(--mu);font-size:12px}
+.box{margin-top:10px;padding:10px;border-radius:8px;background:#11161c;border-left:3px solid var(--l)}
+.box h3{margin:0 0 6px;font-size:12px;letter-spacing:.08em;color:var(--l)}
+.row{display:flex;justify-content:space-between;gap:8px}.na{color:var(--mu);font-style:italic}
+.bar{display:grid;grid-template-columns:22px 1fr 96px;gap:6px;align-items:center;font-size:12px;margin:3px 0}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--l)}.bar div{background:#222a34;border-radius:4px}
+.cmp{font-weight:600}.h2h{max-width:1300px;margin:14px auto}.h2h h3{font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--mu);font-weight:500}.wrap{overflow-x:auto}
+a{color:#6cb6ff}
+</style></head><body>
+<header><h1>⚽ LaLiga · Predicciones y H2H</h1>
+<div><button id="r">↻ Actualizar</button> <span id="load" class="mu"></span></div></header>
+<div class="st" style="max-width:1300px;margin:0 auto 12px" id="st"></div>
+<main class="grid" id="cards"></main><div id="h2h"></div>
+<script>
+// ---- Configuración ----
+const DATA_URL = 'data.json'; // puede ser una URL pública (p. ej. GitHub Pages / raw) con el JSON generado por scraper.js
+const NA = 'No disponible: no se ha podido extraer de la fuente original';
+const IDS={'athletic club':621,'atletico de madrid':13,'ca osasuna':331,'deportivo alaves':1108,'elche cf':1531,'fc barcelona':131,'getafe cf':3709,'levante ud':3368,'malaga cf':1084,'rayo vallecano':367,'rc celta de vigo':940,'rc deportivo de la coruna':897,'rcd espanyol':714,'real betis balompie':150,'real madrid cf':418,'real racing club de santander':630,'real sociedad':681,'sevilla fc':368,'valencia cf':1049,'villarreal cf':1050};
+const AL={'real madrid':'real madrid cf','barcelona':'fc barcelona','atletico madrid':'atletico de madrid','atletico':'atletico de madrid','athletic':'athletic club','osasuna':'ca osasuna','alaves':'deportivo alaves','elche':'elche cf','getafe':'getafe cf','levante':'levante ud','malaga':'malaga cf','rayo':'rayo vallecano','celta':'rc celta de vigo','celta vigo':'rc celta de vigo','deportivo':'rc deportivo de la coruna','deportivo la coruna':'rc deportivo de la coruna','espanyol':'rcd espanyol','betis':'real betis balompie','real betis':'real betis balompie','racing santander':'real racing club de santander','racing':'real racing club de santander','real racing':'real racing club de santander','sevilla':'sevilla fc','valencia':'valencia cf','villarreal':'villarreal cf'};
+const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[.\-]/g,' ').replace(/\s+/g,' ').trim();
+const idOf=n=>{const k=norm(n);return IDS[k]??IDS[AL[k]]??null};
+const TEAMS=[{key:'real',name:'Real Madrid',id:418,c:'#4a90d9',l:'#8ab4f8'},{key:'barca',name:'FC Barcelona',id:131,c:'#a50044',l:'#e0567f'},{key:'atleti',name:'Atlético de Madrid',id:13,c:'#e03a3e',l:'#ff7b7e'}];
+const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const na=()=>`<span class="na">${NA}</span>`;
+let D=null;
+
+function find(list,id){return (list||[]).find(r=>{const h=idOf(r.home||(r.raw||[]).join(' ')); return [idOf(r.home),idOf(r.away)].includes(id)})}
+function findPz(list,id,rival){ // Predictz: busca el bloque que contiene ambos nombres
+  return (list||[]).find(r=>{const t=norm((r.raw||[]).join(' '));
+    const mine=Object.entries({...Object.fromEntries(Object.keys(IDS).map(k=>[k,IDS[k]])),...Object.fromEntries(Object.entries(AL).map(([a,b])=>[a,IDS[b]]))}).filter(([,i])=>i===id).map(([k])=>k);
+    return mine.some(k=>t.includes(k)) && (rival==null||Object.entries(IDS).concat(Object.entries(AL).map(([a,b])=>[a,IDS[b]])).filter(([,i])=>i===rival).some(([k])=>t.includes(k)));});
+}
+function card(T){
+  const f=find(D.forebet,T.id), rival=f?(idOf(f.home)===T.id?idOf(f.away):idOf(f.home)):null;
+  const p=findPz(D.predictz,T.id,rival);
+  const fp=f&&f.pred&&['1','X','2'].includes(f.pred.toUpperCase())?f.pred.toUpperCase():null;
+  const fprob=f&&fp?f.probs[{1:0,X:1,2:2}[fp]]:null;
+  let pz;
+  if(!p) pz=na(); else {
+    const o=p.odds, pr=o?o.map(x=>(100/x)):null;
+    pz=`<div class="row"><span>Pronóstico</span><b>${esc(p.pred??'—')}</b></div>`+
+    (o?['1','X','2'].map((k,i)=>`<div class="bar"><b>${k}</b><div><i style="width:${Math.min(100,pr[i]).toFixed(1)}%"></i></div><span>@${o[i].toFixed(2)} · ${pr[i].toFixed(1)}%</span></div>`).join('')
+       :`<div>Cuotas: ${na()}</div>`);
+  }
+  let cmp;
+  if(!f||!p||!fp||!p.pred) cmp='<span class="stale">Datos incompletos</span>';
+  else cmp=fp===p.pred.toUpperCase()?'<span class="ok">Coinciden</span>':'<span class="error">No coinciden</span>';
+  const rv=f?(idOf(f.home)===T.id?f.away:f.home):null;
+  return `<section class="card" style="--c:${T.c};--l:${T.l}">
+  <div class="top"><img src="https://tmssl.akamaized.net/images/wappen/head/${T.id}.png" alt="" onerror="this.style.display='none'">
+  <div><h2>${T.name}${rv?` vs ${esc(rv)}`:''}</h2><div class="mu">${f?esc(f.date||'Fecha no disponible'):'Partido no encontrado en Forebet'}</div></div></div>
+  <div class="box" style="--l:#f0b429"><h3>FOREBET</h3>${f?`
+    <div class="row"><span>Resultado exacto</span><b>${esc(f.exact)||na()}</b></div>
+    <div class="row"><span>Pronóstico 1X2</span><b>${fp||na()}</b></div>
+    <div class="row"><span>Probabilidad</span><b>${fprob?esc(fprob)+(String(fprob).includes('%')?'':'%'):na()}</b></div>`:na()}</div>
+  <div class="box" style="--l:#3ecf8e"><h3>PREDICTZ</h3>${pz}</div>
+  <div class="box" style="--l:#8b97a6"><h3>COMPARACIÓN 1X2</h3><span class="cmp">${cmp}</span></div></section>`;
+}
+function h2h(T){
+  const h=D.h2h?.[T.key]; if(!h) return '';
+  const f=find(D.forebet,T.id), rv=f?(idOf(f.home)===T.id?f.away:f.home):'rival';
+  const link=h.url?` · <a href="${h.url}" target="_blank" rel="noopener">Ver en Transfermarkt</a>`:'';
+  if(h.error||!h.matches?.length) return `<div class="h2h"><h3>H2H ${T.name} – ${esc(rv)}${link}</h3>${na()} ${esc(h.error||'')}</div>`;
+  return `<div class="h2h"><h3>H2H ${T.name} – ${esc(rv)} (últimos ${h.matches.length})${link}</h3><div class="wrap"><table><tr><th>Fecha</th><th>Local</th><th>Resultado</th><th>Visitante</th><th>Competición</th></tr>`+
+   h.matches.map(m=>`<tr><td>${esc(m.date)||'—'}</td><td>${esc(m.home)||'—'}</td><td><b>${esc(m.score)}</b></td><td>${esc(m.away)||'—'}</td><td>${esc(m.comp)||'—'}</td></tr>`).join('')+`</table></div></div>`;
+}
+function render(){
+  const st=D.status||{};
+  $('#st').innerHTML=`<span class="pill">Última actualización: ${new Date(D.updated).toLocaleString('es-ES')}</span>`+
+   ['forebet','predictz','transfermarkt'].map(k=>{const s=st[k];const c=!s?'stale':s.state==='ok'?'ok':'error';
+   return `<span class="pill ${c}">${k}: ${!s?'sin datos':s.state==='ok'?'correcto':'error — datos anteriores/obsoletos'}</span>`}).join('');
+  $('#cards').innerHTML=TEAMS.map(card).join('');
+  $('#h2h').innerHTML=TEAMS.filter(t=>t.key!=='atleti').map(h2h).join('');
+}
+async function load(){
+  $('#load').textContent='Cargando…';
+  try{const r=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;D=await r.json();localStorage.setItem('lastGood',JSON.stringify(D));}
+  catch{try{D=JSON.parse(localStorage.getItem('lastGood'));}catch{}
+    if(D){D.status={...(D.status||{}),forebet:{state:'error'},predictz:{state:'error'},transfermarkt:{state:'error'}};}}
+  $('#load').textContent='';
+  if(D)render(); else $('#cards').innerHTML=`<p>${NA}. No se pudo cargar ${DATA_URL}: ejecuta scraper.js y sirve la carpeta (ver instrucciones).</p>`;
+}
+$('#r').onclick=load;load();
+</script></body></html>
