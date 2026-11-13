@@ -1,18 +1,23 @@
 {
- "updated": "2026-11-13T06:56:43.968Z",
+ "updated": "2026-11-13T08:33:10.310Z",
  "status": {
   "forebet": {
    "state": "error",
-   "error": "page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator('.rcnt') to be visible\n",
+   "error": "page.waitForSelector: Timeout 20000ms exceeded.",
+   "page": {
+    "title": "Un momento…",
+    "url": "https://www.forebet.com/es/predicciones-espana/la-liga",
+    "text": "www.forebet.com Verificación de seguridad en curso Este sitio web utiliza un servicio de seguridad para protegerse contra bots maliciosos. Esta página se muestra mientras el sitio web verifica que tú no eres un bot. Ray ID: a59c6e1a2c7637c1 Rendimiento y seguridad de Cloudflare Privacidad"
+   },
    "staleSince": null
   },
   "predictz": {
    "state": "ok",
-   "at": "2026-11-13T06:57:04.679Z"
+   "at": "2026-11-13T08:33:31.001Z"
   },
   "transfermarkt": {
    "state": "ok",
-   "at": "2026-11-13T06:57:04.679Z"
+   "at": "2026-11-13T08:33:31.001Z"
   }
  },
  "forebet": [],
