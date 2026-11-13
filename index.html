@@ -26,14 +26,29 @@ h1{margin:0;font-size:clamp(32px,7vw,56px);font-weight:800;letter-spacing:-1px;l
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chip{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:99px}
 .note{margin-top:10px;font-size:12px;color:var(--warn)}a{color:#6cb6ff}.na{color:var(--mu);font-style:italic}
 footer{margin-top:14px;font-size:12px;color:var(--mu)}
+/* Estilos para la caja de WhatsApp */
+.whatsapp-box{max-width:1200px;margin:0 auto 16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.whatsapp-box h3{margin:0 0 8px;font-size:16px;color:var(--tx)}
+.whatsapp-box textarea{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;font-size:14px;resize:vertical}
+.whatsapp-box button{margin-top:8px;background:#25D366;font-weight:bold;width:100%}
+.whatsapp-box button:hover{background:#20ba5a}
 </style></head><body>
 <header><div><h1>⚽ PRONÓSTICO PARA PORRA</h1><div class="sub">LaLiga · Real Madrid, FC Barcelona y Atlético de Madrid</div></div><div><button id="r">↻ Recargar</button></div></header>
-<div class="st" id="st">Cargando…</div><div id="porra"></div><main class="grid" id="cards"></main>
+<div class="st" id="st">Cargando…</div>
+
+<!-- Bloque de Resumen para WhatsApp -->
+<div class="whatsapp-box">
+    <h3>📱 Copiar Resumen para WhatsApp</h3>
+    <textarea id="whatsapp-text" rows="4" readonly></textarea>
+    <button id="btn-copy-wa">Copiar texto para WhatsApp</button>
+</div>
+
+<div id="porra"></div><main class="grid" id="cards"></main>
 <footer>Fuente: <a href="https://myscoreprediction.com/la-liga/" target="_blank" rel="noopener">MyScorePrediction</a>. Predicciones generadas por IA, solo con fines de entretenimiento; no son consejo de apuestas. Cada previsión es una foto con fecha y puede haber quedado desactualizada. Los porcentajes son los publicados por la fuente. En el resumen para la porra, el 1X2 del Atlético es el de mayor porcentaje publicado.</footer>
 <script>
 const NA='No disponible: no se ha podido extraer de la fuente original';
 const T=[['real','Real Madrid','#4a90d9'],['barca','FC Barcelona','#a50044'],['atleti','Atlético de Madrid','#e03a3e']];
-const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&','<':'<','>':'>','"':'"'}[c]));
 const na=()=>`<span class="na">${NA}</span>`;
 function bar(l,v,c){return `<div class="bar"><span>${l}</span><div><i style="width:${v??0}%"></i></div><b>${v==null?'—':v+'%'}</b></div>`}
 function best(p){if(!p||p.home==null||p.draw==null||p.away==null)return null;const m=Math.max(p.home,p.draw,p.away);return{m,ks:[['1',p.home],['X',p.draw],['2',p.away]].filter(([,v])=>v===m).map(([k])=>k)}}
@@ -41,7 +56,6 @@ const short=n=>String(n||'').replace(/^(RCD|RC|FC|CF|CA|UD|SD|CD|Club)\s+/,'').r
 function porra(D){
   const img=u=>u?`<img src="${e(u)}" alt="" onerror="this.style.display='none'">`:'';
   const nm={real:'Real Madrid',barca:'FC Barcelona',atleti:'Atlético de Madrid'};
-  // ORDEN FIJO del cuadro PORRA (no depende de la fecha ni de los datos): 1.º Real Madrid, 2.º FC Barcelona, 3.º Atlético de Madrid
   const html=['real','barca','atleti'].map(k=>{
     const t=D.teams?.[k];
     if(!t||!t.score)return `<div class="prow"><span class="val na">—</span><span class="m na">${nm[k]}: ${NA}</span></div>`;
@@ -56,6 +70,26 @@ function porra(D){
   }).join('');
   return `<div class="porra"><h2>PORRA</h2>${html}</div>`;
 }
+
+// Función que genera automáticamente el texto plano para WhatsApp basado en data.json
+function actualizarTextoWhatsApp(D) {
+  let lineas = ["PORRA"];
+  ['real', 'barca', 'atleti'].forEach(k => {
+    const t = D.teams?.[k];
+    if (!t || !t.score) return;
+    const local = short(t.home);
+    const visitante = short(t.away);
+    if (k !== 'atleti') {
+      lineas.push(`${t.score.home}-${t.score.away} ${local} - ${visitante}`);
+    } else {
+      const b = best(t.probs);
+      const resVal = b ? b.ks.join('/') : '-';
+      lineas.push(`${resVal} ${local} - ${visitante}`);
+    }
+  });
+  document.getElementById('whatsapp-text').value = lineas.join('\n');
+}
+
 function card([k,name,c],D){
   const t=D.teams?.[k];
   if(!t||!t.score) return `<section class="card" style="--c:${c}"><h2>${name}</h2>${na()}${t?.error?`<div class="note">${e(t.error)}</div>`:''}</section>`;
@@ -81,6 +115,26 @@ async function load(){
   $('#st').innerHTML=`Última actualización: ${new Date(D.updated).toLocaleString('es-ES')} · Fuente: <span class="${cls}">${D.status==='ok'?'correcta':D.status==='partial'?'parcial (hay datos obsoletos)':'con error (datos anteriores)'}</span>`;
   $('#porra').innerHTML=porra(D);
   $('#cards').innerHTML=T.map(x=>card(x,D)).join('');
+  
+  // Actualizamos el campo de texto de WhatsApp con los datos cargados
+  actualizarTextoWhatsApp(D);
 }
+
+// Botón de copiar al portapapeles
+$('#btn-copy-wa').onclick = () => {
+  const txt = document.getElementById('whatsapp-text');
+  txt.select();
+  navigator.clipboard.writeText(txt.value).then(() => {
+    const btn = $('#btn-copy-wa');
+    const originalText = btn.textContent;
+    btn.textContent = '¡Copiado con éxito!';
+    btn.style.background = '#128C7E';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = '#25D366';
+    }, 2000);
+  });
+};
+
 $('#r').onclick=load;load();
 </script></body></html>
