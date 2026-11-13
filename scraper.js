@@ -1,81 +1,77 @@
-// Uso: npm i playwright && npx playwright install chromium && node scraper.js
-// Genera data.json junto al index.html. Si una fuente falla, conserva los datos anteriores (marcados como obsoletos).
-const { chromium } = require('playwright');
+// Lee las predicciones de MyScorePrediction (Real Madrid, Barcelona, Atlético) y genera data.json
+// Node 20, sin librerías. Si algo falla, conserva los datos anteriores y los marca como obsoletos.
 const fs = require('fs');
+const BASE = 'https://myscoreprediction.com';
+const UA = 'Mozilla/5.0 (compatible; laliga-dashboard-personal/1.0)';
+const TEAMS = { real: 'real-madrid-cf', barca: 'fc-barcelona', atleti: 'club-atltico-de-madrid' };
 
-const URLS = {
-  forebet: 'https://www.forebet.com/es/predicciones-espana/la-liga',
-  predictz: 'https://www.predictz.com/es/pronosticos/espana/la-liga/',
-};
-const IDS = { 'athletic club':621,'atletico de madrid':13,'ca osasuna':331,'deportivo alaves':1108,'elche cf':1531,'fc barcelona':131,'getafe cf':3709,'levante ud':3368,'malaga cf':1084,'rayo vallecano':367,'rc celta de vigo':940,'rc deportivo de la coruna':897,'rcd espanyol':714,'real betis balompie':150,'real madrid cf':418,'real racing club de santander':630,'real sociedad':681,'sevilla fc':368,'valencia cf':1049,'villarreal cf':1050 };
-const ALIAS = { 'real madrid':'real madrid cf','barcelona':'fc barcelona','atletico madrid':'atletico de madrid','atletico':'atletico de madrid','athletic':'athletic club','osasuna':'ca osasuna','alaves':'deportivo alaves','elche':'elche cf','getafe':'getafe cf','levante':'levante ud','malaga':'malaga cf','rayo':'rayo vallecano','celta':'rc celta de vigo','celta vigo':'rc celta de vigo','deportivo':'rc deportivo de la coruna','deportivo la coruna':'rc deportivo de la coruna','espanyol':'rcd espanyol','betis':'real betis balompie','real betis':'real betis balompie','racing santander':'real racing club de santander','racing':'real racing club de santander','real racing':'real racing club de santander','sevilla':'sevilla fc','valencia':'valencia cf','villarreal':'villarreal cf' };
-const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[.\-]/g,' ').replace(/\s+/g,' ').trim();
-const idOf = n => { const k = norm(n); return IDS[k] ?? IDS[ALIAS[k]] ?? null; };
-const MINE = { real: 418, barca: 131, atleti: 13 };
+const decode = s => s.replace(/&ndash;|&#8211;/g, '–').replace(/&mdash;|&#8212;/g, '—').replace(/&middot;/g, '·')
+  .replace(/&times;/g, '×').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"');
+const strip = h => decode(h.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ')
+  .replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
 
-let prev = {};
-try { prev = JSON.parse(fs.readFileSync('data.json','utf8')); } catch {}
-const out = { updated: new Date().toISOString(), status: {}, forebet: prev.forebet || [], predictz: prev.predictz || [], h2h: prev.h2h || {} };
-const ok = (k) => out.status[k] = { state: 'ok', at: new Date().toISOString() };
-const fail = (k, e, d) => out.status[k] = { state: 'error', error: String(e.message || e).split('\n')[0], page: d || null, staleSince: prev.status?.[k]?.at || null };
-const diag = async (page) => { try { return { title: await page.title(), url: page.url(), text: (await page.innerText('body')).replace(/\s+/g, ' ').slice(0, 300) }; } catch { return null; } };
-
-async function forebet(page) {
-  await page.goto(URLS.forebet, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.waitForSelector('.rcnt', { timeout: 20000 });
-  // SELECTORES SIN VERIFICAR CONTRA LA WEB VIVA: ajústalos si Forebet cambia su HTML.
-  const rows = await page.$$eval('.rcnt', els => els.map(e => ({
-    home: e.querySelector('.homeTeam')?.innerText.trim() || null,
-    away: e.querySelector('.awayTeam')?.innerText.trim() || null,
-    date: e.querySelector('.date_bah')?.innerText.trim() || null,
-    pred: e.querySelector('.forepr')?.innerText.trim() || null,
-    probs: [...e.querySelectorAll('.fprc span')].map(s => s.innerText.trim()),
-    exact: e.querySelector('.ex_sc')?.innerText.trim() || null,
-  })));
-  out.forebet = rows.filter(r => r.home && r.away && Object.values(MINE).some(id => [idOf(r.home), idOf(r.away)].includes(id)));
-}
-
-async function predictz(page) {
-  await page.goto(URLS.predictz, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  // SELECTOR SIN VERIFICAR: se parsea el texto de cada bloque; si no hay 3 cuotas se deja null.
-  const rows = await page.$$eval('[class*="pttr"], [class*="ptmobh"], .pttable tr', els => els.map(e => e.innerText));
-  out.predictz = rows.map(t => {
-    const lines = t.split('\n').map(s => s.trim()).filter(Boolean);
-    const odds = (t.match(/\b\d{1,2}[.,]\d{2}\b/g) || []).slice(0, 3).map(x => parseFloat(x.replace(',', '.')));
-    const pm = t.match(/\b(?:Pron[oó]stico|Tip)\W*([1X2])\b/i);
-    return { raw: lines.slice(0, 6), pred: pm ? pm[1].toUpperCase() : null, odds: odds.length === 3 ? odds : null };
-  }).filter(r => /real madrid|barcelona|atl[eé]tico/i.test(r.raw.join(' ')));
-  if (!out.predictz.length) throw new Error('No se extrajo ningún partido de Predictz');
-}
-
-async function h2h(page, key, myId) {
-  const f = out.forebet.find(r => [idOf(r.home), idOf(r.away)].includes(myId));
-  if (!f) return;
-  const rival = idOf(f.home) === myId ? idOf(f.away) : idOf(f.home);
-  if (!rival) { out.h2h[key] = { error: 'Rival no está en la tabla de IDs' }; return; }
-  const url = `https://www.transfermarkt.es/vergleich/vereineBegegnungen/statistik/${myId}_${rival}`;
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  // SELECTOR SIN VERIFICAR: tabla de resultados de Transfermarkt.
-  const rows = await page.$$eval('table.items tbody tr', trs => trs.map(tr => [...tr.querySelectorAll('td')].map(td => td.innerText.trim())));
-  const matches = rows.filter(c => c.some(x => /^\d+:\d+/.test(x))).slice(0, 10).map(c => {
-    const score = c.find(x => /^\d+:\d+/.test(x));
-    const i = c.indexOf(score);
-    return { cells: c, score, date: c.find(x => /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(x)) || null, home: c[i - 1] || null, away: c[i + 1] || null, comp: c[0] || null };
-  });
-  out.h2h[key] = { url, matches };
-}
-
-(async () => {
-  const browser = await chromium.launch();
-  const page = await (await browser.newContext({ locale: 'es-ES' })).newPage();
-  for (const [k, fn] of [['forebet', forebet], ['predictz', predictz]]) {
-    try { await fn(page); ok(k); } catch (e) { fail(k, e, await diag(page)); }
+function parseMatch(html) {
+  const t = strip(html), r = {};
+  const p = t.match(/AI prediction:\s*(.+?)\s+(\d+)\s*[–-]\s*(\d+)\s+(.+?)\.\s*Win probabilities\s*[—–-]\s*(.+?)\s+(\d+)%,\s*draw\s+(\d+)%,\s*(.+?)\s+(\d+)%/);
+  if (p) {
+    r.home = p[1]; r.away = p[4];
+    r.score = { home: +p[2], away: +p[3] };
+    r.probs = { home: +p[6], draw: +p[7], away: +p[9] };
+    r.names_consistent = p[5] === p[1] && p[8] === p[4];
   }
+  const m = decode(html).match(/exact score (\d+)-(\d+): (\d+)% home win, (\d+)% draw, (\d+)% away win/);
+  if (m && r.score) r.meta_consistent = +m[1] === r.score.home && +m[2] === r.score.away && +m[3] === r.probs.home && +m[4] === r.probs.draw && +m[5] === r.probs.away;
+  const d = t.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s*([A-Za-z]+ \d{1,2}, \d{4})\s*[—–-]\s*(\d{2}:\d{2}) UTC/);
+  if (d) { r.date_text = d[1] + ' — ' + d[2] + ' UTC'; const ms = Date.parse(d[1] + ' ' + d[2] + ' UTC'); r.kickoff_iso = isNaN(ms) ? null : new Date(ms).toISOString(); }
+  r.matchday = (t.match(/Matchday (\d+)/) || [])[1] || null;
+  r.snapshot = (t.match(/Forecast snapshot from (.+?)\.\s/) || [])[1] || null;
+  r.confidence = (t.match(/Confidence\s*(High|Medium|Low)/i) || [])[1] || null;
+  r.over25 = +(t.match(/\(2\.5\+\)\s*(\d+)%/) || [])[1] || null;
+  r.btts = +(t.match(/Both Teams Score\s*(\d+)%/) || [])[1] || null;
+  const crests = [...html.matchAll(/https:\/\/crests\.football-data\.org\/[^"'\s)]+/g)].map(x => x[0]);
+  r.crest_home = crests[0] || null; r.crest_away = crests.find(c => c !== crests[0]) || null;
+  return r;
+}
+function pick1x2(s) { return s.home > s.away ? '1' : s.home < s.away ? '2' : 'X'; }
+function pickByProb(p) { const m = Math.max(p.home, p.draw, p.away); return m === p.home ? '1' : m === p.away ? '2' : 'X'; }
+
+async function get(url) {
+  const res = await fetch(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'en' } });
+  const html = await res.text();
+  if (res.status !== 200) throw new Error('HTTP ' + res.status + ' en ' + url);
+  if (/just a moment|cf-chl/i.test(html)) throw new Error('Página de verificación anti-bot en ' + url);
+  return html;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function main() {
+  let prev = {}; try { prev = JSON.parse(fs.readFileSync('data.json', 'utf8')); } catch {}
+  const out = { updated: new Date().toISOString(), source: BASE, teams: {}, status: 'ok' };
+  const today = new Date().toISOString().slice(0, 10);
+  let links = [];
   try {
-    await h2h(page, 'real', MINE.real); await h2h(page, 'barca', MINE.barca);
-    if (['real', 'barca'].every(k => out.h2h[k]?.matches?.length)) ok('transfermarkt'); else fail('transfermarkt', new Error('Sin H2H extraído (¿rival desconocido o tabla no encontrada?)'), await diag(page));
-  } catch (e) { fail('transfermarkt', e, await diag(page)); }
-  await browser.close();
+    const liga = await get(BASE + '/la-liga/');
+    links = [...new Set([...liga.matchAll(/href="([^"#?]+)"/g)].map(m => m[1]))]
+      .map(h => (h.startsWith('http') ? h : BASE + h))
+      .map(u => { const m = u.match(/\/la-liga\/(.+)-vs-(.+)-(\d{4}-\d{2}-\d{2})\/$/); return m && { url: u, h: m[1], a: m[2], date: m[3] }; })
+      .filter(Boolean);
+  } catch (e) { out.status = 'error'; out.error = String(e.message || e); }
+  for (const [key, slug] of Object.entries(TEAMS)) {
+    try {
+      if (out.status === 'error') throw new Error(out.error);
+      const next = links.filter(l => (l.h === slug || l.a === slug) && l.date >= today).sort((x, y) => x.date.localeCompare(y.date))[0];
+      if (!next) throw new Error('No hay próximo partido publicado en la lista de LaLiga');
+      await sleep(1500);
+      const r = parseMatch(await get(next.url));
+      if (!r.score || !r.probs) throw new Error('No se pudo leer el marcador/probabilidades de ' + next.url);
+      out.teams[key] = { ok: true, url: next.url, ...r, pick1x2: pick1x2(r.score), pick_by_prob: pickByProb(r.probs), tracked_is_home: next.h === slug };
+    } catch (e) {
+      out.status = 'partial';
+      out.teams[key] = { ...(prev.teams?.[key] || {}), ok: false, stale: true, error: String(e.message || e) };
+    }
+  }
   fs.writeFileSync('data.json', JSON.stringify(out, null, 1));
-  console.log(out.status);
-})();
+  console.log(JSON.stringify(out, null, 1));
+}
+module.exports = { parseMatch, pick1x2, pickByProb };
+if (require.main === module) main();
