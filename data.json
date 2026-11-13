@@ -1,38 +1,94 @@
 {
- "updated": "2026-11-13T08:39:55.004Z",
- "status": {
-  "forebet": {
-   "state": "error",
-   "error": "page.waitForSelector: Timeout 20000ms exceeded.",
-   "page": {
-    "title": "Un momento…",
-    "url": "https://www.forebet.com/es/predicciones-espana/la-liga",
-    "text": "www.forebet.com Verificación de seguridad en curso Este sitio web utiliza un servicio de seguridad para protegerse contra bots maliciosos. Esta página se muestra mientras el sitio web verifica que tú no eres un bot. Ray ID: a59c7802ec35adbe Rendimiento y seguridad de Cloudflare Privacidad"
+ "updated": "2026-11-13T09:17:23.215Z",
+ "source": "https://myscoreprediction.com",
+ "teams": {
+  "real": {
+   "ok": true,
+   "url": "https://myscoreprediction.com/la-liga/real-madrid-cf-vs-rc-celta-de-vigo-2026-11-22/",
+   "home": "Real Madrid CF",
+   "away": "RC Celta de Vigo",
+   "score": {
+    "home": 3,
+    "away": 0
    },
-   "staleSince": null
+   "probs": {
+    "home": 81,
+    "draw": 12,
+    "away": 7
+   },
+   "names_consistent": true,
+   "meta_consistent": true,
+   "date_text": "November 21, 2026 — 20:00 UTC",
+   "kickoff_iso": "2026-11-21T20:00:00.000Z",
+   "matchday": "13",
+   "snapshot": "Nov 8, 2026 — 05:16 UTC ",
+   "confidence": "High",
+   "over25": null,
+   "btts": 34,
+   "crest_home": "https://crests.football-data.org/86.png",
+   "crest_away": "https://crests.football-data.org/558.png",
+   "pick1x2": "1",
+   "pick_by_prob": "1",
+   "tracked_is_home": true
   },
-  "predictz": {
-   "state": "error",
-   "error": "No se extrajo ningún partido de Predictz",
-   "page": {
-    "title": "Just a moment...",
-    "url": "https://www.predictz.com/es/pronosticos/espana/la-liga/?__cf_chl_rt_tk=YEGRMEf_MvMDC5e.hpqg_QbsMgxx6Lb7VzqdgNF1LOE-1794559216-1.0.1.1-fIwtgl443tgmhDWdV06KUdCZOUuP97liAu7trrz0Y2M",
-    "text": ""
+  "barca": {
+   "ok": true,
+   "url": "https://myscoreprediction.com/la-liga/fc-barcelona-vs-villarreal-cf-2026-11-22/",
+   "home": "FC Barcelona",
+   "away": "Villarreal CF",
+   "score": {
+    "home": 3,
+    "away": 1
    },
-   "staleSince": "2026-11-13T08:33:31.001Z"
+   "probs": {
+    "home": 68,
+    "draw": 19,
+    "away": 13
+   },
+   "names_consistent": true,
+   "meta_consistent": true,
+   "date_text": "November 22, 2026 — 13:00 UTC",
+   "kickoff_iso": "2026-11-22T13:00:00.000Z",
+   "matchday": "13",
+   "snapshot": "Nov 9, 2026 — 04:06 UTC ",
+   "confidence": "Medium",
+   "over25": null,
+   "btts": 55,
+   "crest_home": "https://crests.football-data.org/81.png",
+   "crest_away": "https://crests.football-data.org/94.png",
+   "pick1x2": "1",
+   "pick_by_prob": "1",
+   "tracked_is_home": true
   },
-  "transfermarkt": {
-   "state": "error",
-   "error": "Sin H2H extraído (¿rival desconocido o tabla no encontrada?)",
-   "page": {
-    "title": "Just a moment...",
-    "url": "https://www.predictz.com/es/pronosticos/espana/la-liga/?__cf_chl_rt_tk=YEGRMEf_MvMDC5e.hpqg_QbsMgxx6Lb7VzqdgNF1LOE-1794559216-1.0.1.1-fIwtgl443tgmhDWdV06KUdCZOUuP97liAu7trrz0Y2M",
-    "text": ""
+  "atleti": {
+   "ok": true,
+   "url": "https://myscoreprediction.com/la-liga/getafe-cf-vs-club-atltico-de-madrid-2026-11-22/",
+   "home": "Getafe CF",
+   "away": "Club Atlético de Madrid",
+   "score": {
+    "home": 0,
+    "away": 2
    },
-   "staleSince": "2026-11-13T08:33:31.001Z"
+   "probs": {
+    "home": 18,
+    "draw": 25,
+    "away": 57
+   },
+   "names_consistent": true,
+   "meta_consistent": true,
+   "date_text": "November 22, 2026 — 20:00 UTC",
+   "kickoff_iso": "2026-11-22T20:00:00.000Z",
+   "matchday": "13",
+   "snapshot": "Nov 9, 2026 — 04:33 UTC ",
+   "confidence": "Medium",
+   "over25": null,
+   "btts": 34,
+   "crest_home": "https://crests.football-data.org/82.png",
+   "crest_away": "https://crests.football-data.org/78.png",
+   "pick1x2": "2",
+   "pick_by_prob": "2",
+   "tracked_is_home": false
   }
  },
- "forebet": [],
- "predictz": [],
- "h2h": {}
+ "status": "ok"
 }
