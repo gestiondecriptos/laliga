@@ -17,7 +17,8 @@ let prev = {};
 try { prev = JSON.parse(fs.readFileSync('data.json','utf8')); } catch {}
 const out = { updated: new Date().toISOString(), status: {}, forebet: prev.forebet || [], predictz: prev.predictz || [], h2h: prev.h2h || {} };
 const ok = (k) => out.status[k] = { state: 'ok', at: new Date().toISOString() };
-const fail = (k, e) => out.status[k] = { state: 'error', error: String(e.message || e), staleSince: prev.status?.[k]?.at || null };
+const fail = (k, e, d) => out.status[k] = { state: 'error', error: String(e.message || e).split('\n')[0], page: d || null, staleSince: prev.status?.[k]?.at || null };
+const diag = async (page) => { try { return { title: await page.title(), url: page.url(), text: (await page.innerText('body')).replace(/\s+/g, ' ').slice(0, 300) }; } catch { return null; } };
 
 async function forebet(page) {
   await page.goto(URLS.forebet, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -67,11 +68,11 @@ async function h2h(page, key, myId) {
   const browser = await chromium.launch();
   const page = await (await browser.newContext({ locale: 'es-ES' })).newPage();
   for (const [k, fn] of [['forebet', forebet], ['predictz', predictz]]) {
-    try { await fn(page); ok(k); } catch (e) { fail(k, e); }
+    try { await fn(page); ok(k); } catch (e) { fail(k, e, await diag(page)); }
   }
   try {
     await h2h(page, 'real', MINE.real); await h2h(page, 'barca', MINE.barca); ok('transfermarkt');
-  } catch (e) { fail('transfermarkt', e); }
+  } catch (e) { fail('transfermarkt', e, await diag(page)); }
   await browser.close();
   fs.writeFileSync('data.json', JSON.stringify(out, null, 1));
   console.log(out.status);
