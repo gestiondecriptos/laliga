@@ -26,21 +26,19 @@ h1{margin:0;font-size:clamp(32px,7vw,56px);font-weight:800;letter-spacing:-1px;l
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.chip{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:99px}
 .note{margin-top:10px;font-size:12px;color:var(--warn)}a{color:#6cb6ff}.na{color:var(--mu);font-style:italic}
 footer{margin-top:14px;font-size:12px;color:var(--mu)}
-/* Estilos para la caja de WhatsApp */
-.whatsapp-box{max-width:1200px;margin:0 auto 16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
-.whatsapp-box h3{margin:0 0 8px;font-size:16px;color:var(--tx)}
-.whatsapp-box textarea{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:monospace;font-size:14px;resize:vertical}
-.whatsapp-box button{margin-top:8px;background:#25D366;font-weight:bold;width:100%}
-.whatsapp-box button:hover{background:#20ba5a}
+/* Estilo exclusivo para el botón de WhatsApp flotante/limpio */
+.whatsapp-container{max-width:1200px;margin:0 auto 16px;}
+.whatsapp-container button{background:#25D366;color:white;font-weight:bold;width:100%;padding:12px;border-radius:10px;font-size:15px;box-shadow:0 4px 12px rgba(37,211,102,0.3);transition:background 0.2s;}
+.whatsapp-container button:hover{background:#20ba5a}
 </style></head><body>
 <header><div><h1>⚽ PRONÓSTICO PARA PORRA</h1><div class="sub">LaLiga · Real Madrid, FC Barcelona y Atlético de Madrid</div></div><div><button id="r">↻ Recargar</button></div></header>
 <div class="st" id="st">Cargando…</div>
 
-<!-- Bloque de Resumen para WhatsApp -->
-<div class="whatsapp-box">
-    <h3>📱 Copiar Resumen para WhatsApp</h3>
-    <textarea id="whatsapp-text" rows="4" readonly></textarea>
-    <button id="btn-copy-wa">Copiar texto para WhatsApp</button>
+<!-- Solo el botón de WhatsApp (sin caja de texto a la vista) -->
+<div class="whatsapp-container">
+    <button id="btn-copy-wa">📱 Copiar resumen para WhatsApp</button>
+    <!-- Textarea oculto internamente para gestionar el portapapeles sin molestar -->
+    <textarea id="whatsapp-text" style="display:none;"></textarea>
 </div>
 
 <div id="porra"></div><main class="grid" id="cards"></main>
@@ -71,7 +69,7 @@ function porra(D){
   return `<div class="porra"><h2>PORRA</h2>${html}</div>`;
 }
 
-// Función que genera automáticamente el texto plano para WhatsApp basado en data.json
+// Genera el texto plano en segundo plano
 function actualizarTextoWhatsApp(D) {
   let lineas = ["PORRA"];
   ['real', 'barca', 'atleti'].forEach(k => {
@@ -116,23 +114,24 @@ async function load(){
   $('#porra').innerHTML=porra(D);
   $('#cards').innerHTML=T.map(x=>card(x,D)).join('');
   
-  // Actualizamos el campo de texto de WhatsApp con los datos cargados
   actualizarTextoWhatsApp(D);
 }
 
-// Botón de copiar al portapapeles
+// Copiar al portapapeles al hacer clic en el botón
 $('#btn-copy-wa').onclick = () => {
   const txt = document.getElementById('whatsapp-text');
+  txt.style.display = 'block';
   txt.select();
   navigator.clipboard.writeText(txt.value).then(() => {
+    txt.style.display = 'none';
     const btn = $('#btn-copy-wa');
     const originalText = btn.textContent;
-    btn.textContent = '¡Copiado con éxito!';
+    btn.textContent = '¡Copiado! Ya puedes pegarlo en WhatsApp 📋';
     btn.style.background = '#128C7E';
     setTimeout(() => {
       btn.textContent = originalText;
       btn.style.background = '#25D366';
-    }, 2000);
+    }, 2500);
   });
 };
 
