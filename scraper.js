@@ -45,6 +45,7 @@ async function predictz(page) {
     const pm = t.match(/\b(?:Pron[oó]stico|Tip)\W*([1X2])\b/i);
     return { raw: lines.slice(0, 6), pred: pm ? pm[1].toUpperCase() : null, odds: odds.length === 3 ? odds : null };
   }).filter(r => /real madrid|barcelona|atl[eé]tico/i.test(r.raw.join(' ')));
+  if (!out.predictz.length) throw new Error('No se extrajo ningún partido de Predictz');
 }
 
 async function h2h(page, key, myId) {
@@ -71,7 +72,8 @@ async function h2h(page, key, myId) {
     try { await fn(page); ok(k); } catch (e) { fail(k, e, await diag(page)); }
   }
   try {
-    await h2h(page, 'real', MINE.real); await h2h(page, 'barca', MINE.barca); ok('transfermarkt');
+    await h2h(page, 'real', MINE.real); await h2h(page, 'barca', MINE.barca);
+    if (['real', 'barca'].every(k => out.h2h[k]?.matches?.length)) ok('transfermarkt'); else fail('transfermarkt', new Error('Sin H2H extraído (¿rival desconocido o tabla no encontrada?)'), await diag(page));
   } catch (e) { fail('transfermarkt', e, await diag(page)); }
   await browser.close();
   fs.writeFileSync('data.json', JSON.stringify(out, null, 1));
