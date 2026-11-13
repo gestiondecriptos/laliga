@@ -7,11 +7,15 @@
 header,.grid,footer{max-width:1200px;margin:0 auto}header{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
 h1{margin:0;font-size:clamp(32px,7vw,56px);font-weight:800;letter-spacing:-1px;line-height:1.05;background:linear-gradient(90deg,#8ab4f8,#e0567f,#ff7b7e);-webkit-background-clip:text;background-clip:text;color:transparent}
 .sub{color:var(--mu);margin-top:6px;font-size:14px}
-.porra{max-width:1200px;margin:0 auto 16px;background:linear-gradient(180deg,#1d2530,#171d25);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-.porra h2{margin:0 0 8px;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
-.prow{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
-.prow:first-of-type{border-top:0}.prow b.t{border-left:4px solid var(--c);padding-left:8px}.val{font-size:22px;font-weight:700;text-align:right}
-@media(max-width:560px){.prow{grid-template-columns:1fr auto}.prow .m{grid-column:1/-1;order:3}}button{background:#2b6cb0;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+.porra{max-width:1200px;margin:0 auto 16px;background:linear-gradient(135deg,#0e5a3a,#17855a);border:1px solid #3ecf8e;border-radius:14px;padding:14px 18px;box-shadow:0 4px 18px rgba(23,133,90,.25)}
+.porra h2{margin:0 0 6px;font-size:18px;letter-spacing:.2em;color:#fff}
+.prow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:10px 0;border-top:1px solid rgba(255,255,255,.18)}
+.prow:first-of-type{border-top:0}
+.porra .val{font-size:26px;font-weight:800;min-width:64px;color:#fff}
+.porra .m{display:inline-flex;align-items:center;gap:8px;font-size:17px;color:#fff}
+.porra .m img{width:28px;height:28px;object-fit:contain}
+.porra .sub{font-size:12px;color:#d4f5e4}
+.porra .na{color:#d4f5e4;font-weight:400;font-size:14px}button{background:#2b6cb0;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
 .st{font-size:12px;color:var(--mu);margin-bottom:12px;max-width:1200px;margin-inline:auto}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:14px}
@@ -23,7 +27,7 @@ h1{margin:0;font-size:clamp(32px,7vw,56px);font-weight:800;letter-spacing:-1px;l
 .note{margin-top:10px;font-size:12px;color:var(--warn)}a{color:#6cb6ff}.na{color:var(--mu);font-style:italic}
 footer{margin-top:14px;font-size:12px;color:var(--mu)}
 </style></head><body>
-<header><div><h1>⚽ Pronóstico para porra</h1><div class="sub">LaLiga · Real Madrid, FC Barcelona y Atlético de Madrid</div></div><div><button id="r">↻ Recargar</button></div></header>
+<header><div><h1>⚽ PRONÓSTICO PARA PORRA</h1><div class="sub">LaLiga · Real Madrid, FC Barcelona y Atlético de Madrid</div></div><div><button id="r">↻ Recargar</button></div></header>
 <div class="st" id="st">Cargando…</div><div id="porra"></div><main class="grid" id="cards"></main>
 <footer>Fuente: <a href="https://myscoreprediction.com/la-liga/" target="_blank" rel="noopener">MyScorePrediction</a>. Predicciones generadas por IA, solo con fines de entretenimiento; no son consejo de apuestas. Cada previsión es una foto con fecha y puede haber quedado desactualizada. Los porcentajes son los publicados por la fuente. En el resumen para la porra, el 1X2 del Atlético es el de mayor porcentaje publicado.</footer>
 <script>
@@ -33,21 +37,24 @@ const $=s=>document.querySelector(s),e=s=>String(s??'').replace(/[&<>"]/g,c=>({'
 const na=()=>`<span class="na">${NA}</span>`;
 function bar(l,v,c){return `<div class="bar"><span>${l}</span><div><i style="width:${v??0}%"></i></div><b>${v==null?'—':v+'%'}</b></div>`}
 function best(p){if(!p||p.home==null||p.draw==null||p.away==null)return null;const m=Math.max(p.home,p.draw,p.away);return{m,ks:[['1',p.home],['X',p.draw],['2',p.away]].filter(([,v])=>v===m).map(([k])=>k)}}
+const short=n=>String(n||'').replace(/^(RCD|RC|FC|CF|CA|UD|SD|CD|Club)\s+/,'').replace(/\s+(CF|FC|CD|UD)$/,'');
 function porra(D){
-  const rows=[['real','Real Madrid','#4a90d9','score'],['barca','FC Barcelona','#a50044','score'],['atleti','Atlético de Madrid','#e03a3e','1x2']];
-  const html=rows.map(([k,name,c,kind])=>{
-    const t=D.teams?.[k];const old=t?.stale?' <span class="mu">(dato obsoleto)</span>':'';
-    const head=`<b class="t" style="--c:${c}">${name}</b>`;
-    if(!t||!t.score)return `<div class="prow">${head}<span class="m">${na()}</span><span></span></div>`;
-    const match=`<span class="m">${e(t.home)} vs ${e(t.away)}${old}</span>`;
-    if(kind==='score')return `<div class="prow">${head}${match}<span class="val">${t.score.home} – ${t.score.away}</span></div>`;
+  const img=u=>u?`<img src="${e(u)}" alt="" onerror="this.style.display='none'">`:'';
+  const nm={real:'Real Madrid',barca:'FC Barcelona',atleti:'Atlético de Madrid'};
+  // ORDEN FIJO del cuadro PORRA (no depende de la fecha ni de los datos): 1.º Real Madrid, 2.º FC Barcelona, 3.º Atlético de Madrid
+  const html=['real','barca','atleti'].map(k=>{
+    const t=D.teams?.[k];
+    if(!t||!t.score)return `<div class="prow"><span class="val na">—</span><span class="m na">${nm[k]}: ${NA}</span></div>`;
+    const old=t.stale?' <span class="sub">(dato obsoleto)</span>':'';
+    const match=`<span class="m">${img(t.crest_home)}<b>${e(short(t.home))}</b><span>-</span><b>${e(short(t.away))}</b>${img(t.crest_away)}${old}</span>`;
+    if(k!=='atleti')return `<div class="prow"><span class="val">${t.score.home}-${t.score.away}</span>${match}</div>`;
     const b=best(t.probs);
-    if(!b)return `<div class="prow">${head}${match}<span class="val na" style="font-size:13px">${NA}</span></div>`;
-    const lab=k=>k==='1'?'gana '+e(t.home):k==='2'?'gana '+e(t.away):'empate';
-    const txt=b.ks.length===1?`<span class="mu" style="font-size:12px">${lab(b.ks[0])} · ${b.m}%</span>`:`<span class="mu" style="font-size:12px">mismo porcentaje (${b.m}%)</span>`;
-    return `<div class="prow">${head}${match}<span class="val">${b.ks.join(' / ')} <br>${txt}</span></div>`;
+    if(!b)return `<div class="prow"><span class="val na">—</span>${match}<span class="sub">${NA}</span></div>`;
+    const lab=x=>x==='1'?'gana '+e(short(t.home)):x==='2'?'gana '+e(short(t.away)):'empate';
+    const sub=b.ks.length===1?`${lab(b.ks[0])} · ${b.m}%`:`mismo porcentaje (${b.m}%)`;
+    return `<div class="prow"><span class="val">${b.ks.join('/')}</span>${match}<span class="sub">${sub}</span></div>`;
   }).join('');
-  return `<div class="porra"><h2>Resumen para poner en la porra</h2>${html}</div>`;
+  return `<div class="porra"><h2>PORRA</h2>${html}</div>`;
 }
 function card([k,name,c],D){
   const t=D.teams?.[k];
