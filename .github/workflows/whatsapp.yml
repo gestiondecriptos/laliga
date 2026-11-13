@@ -1,0 +1,17 @@
+name: Enviar WhatsApp
+on:
+  schedule:
+    - cron: '0 14 * * 5'
+  workflow_dispatch:
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node whatsapp.js
+        env:
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
