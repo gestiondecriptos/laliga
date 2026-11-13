@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-13T08:33:10.310Z",
+ "updated": "2026-11-13T08:39:55.004Z",
  "status": {
   "forebet": {
    "state": "error",
@@ -7,17 +7,29 @@
    "page": {
     "title": "Un momento…",
     "url": "https://www.forebet.com/es/predicciones-espana/la-liga",
-    "text": "www.forebet.com Verificación de seguridad en curso Este sitio web utiliza un servicio de seguridad para protegerse contra bots maliciosos. Esta página se muestra mientras el sitio web verifica que tú no eres un bot. Ray ID: a59c6e1a2c7637c1 Rendimiento y seguridad de Cloudflare Privacidad"
+    "text": "www.forebet.com Verificación de seguridad en curso Este sitio web utiliza un servicio de seguridad para protegerse contra bots maliciosos. Esta página se muestra mientras el sitio web verifica que tú no eres un bot. Ray ID: a59c7802ec35adbe Rendimiento y seguridad de Cloudflare Privacidad"
    },
    "staleSince": null
   },
   "predictz": {
-   "state": "ok",
-   "at": "2026-11-13T08:33:31.001Z"
+   "state": "error",
+   "error": "No se extrajo ningún partido de Predictz",
+   "page": {
+    "title": "Just a moment...",
+    "url": "https://www.predictz.com/es/pronosticos/espana/la-liga/?__cf_chl_rt_tk=YEGRMEf_MvMDC5e.hpqg_QbsMgxx6Lb7VzqdgNF1LOE-1794559216-1.0.1.1-fIwtgl443tgmhDWdV06KUdCZOUuP97liAu7trrz0Y2M",
+    "text": ""
+   },
+   "staleSince": "2026-11-13T08:33:31.001Z"
   },
   "transfermarkt": {
-   "state": "ok",
-   "at": "2026-11-13T08:33:31.001Z"
+   "state": "error",
+   "error": "Sin H2H extraído (¿rival desconocido o tabla no encontrada?)",
+   "page": {
+    "title": "Just a moment...",
+    "url": "https://www.predictz.com/es/pronosticos/espana/la-liga/?__cf_chl_rt_tk=YEGRMEf_MvMDC5e.hpqg_QbsMgxx6Lb7VzqdgNF1LOE-1794559216-1.0.1.1-fIwtgl443tgmhDWdV06KUdCZOUuP97liAu7trrz0Y2M",
+    "text": ""
+   },
+   "staleSince": "2026-11-13T08:33:31.001Z"
   }
  },
  "forebet": [],
